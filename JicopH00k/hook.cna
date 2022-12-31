@@ -1,0 +1,111 @@
+beacon_command_register(
+"evillog", 
+"Performs a web request against target server and port",
+"evillog host [port] [method] [--show] [useragent] [headers] [body] [--noproxy]");
+
+alias evillog {
+	local('$barch $handle $data $args');
+
+	if(size(@_) < 2)
+	{
+		berror($1, "Incorrect usage!");
+		berror($1, beacon_command_detail("evillog"));
+		return;
+	}
+
+	# figure out the arch of this session
+	$barch  = barch($1);
+	
+	# read in the right BOF file
+	$handle = openf(script_resource("evillog. $+ $barch $+ .o"));
+	$data   = readb($handle, -1);
+	closef($handle);
+
+	$printoutput = 0;
+	if ($5 eq "--show"){
+		$printoutput = 1;
+	}
+	
+	$proxy = 1;
+	if ($5 eq "--noproxy"){
+		$proxy = 0;
+	}
+
+	if (size(@_) >= 4){
+		if (($4 ne "GET") && 
+			($4 ne "POST") && 
+			($4 ne "PUT") && 
+			($4 ne "PATCH") && 
+			($4 ne "DELETE"))
+		{
+			berror($1, "HTTP method  $+ $4 $+  isn't valid.");
+			berror($1, beacon_command_detail("evillog"));
+			return;
+		}
+	}
+
+	if(size(@_) == 2)
+	{
+		# pack our arguments
+		$args = bof_pack($1, "zizizzzi", $2, 0, "GET", $printoutput, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36", "Accept: */*", "", $proxy);
+	
+	}else if(size(@_) == 3)
+	{
+		# pack our arguments
+		$args = bof_pack($1, "zizizzzi", $2, $3, "GET", $printoutput, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36", "Accept: */*", "", $proxy);
+	
+	} else if(size(@_) == 4)
+	{
+
+		# include method
+		$args = bof_pack($1, "zizizzzi", $2, $3, $4, $printoutput, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36", "Accept: */*", "", $proxy);
+	
+	} else if(size(@_) == 5)
+	{
+		# include print option
+		$args = bof_pack($1, "zizizzzi", $2, $3, $4, $printoutput, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36", "Accept: */*", "", $proxy);
+	} else if(size(@_) == 6)
+	{
+		# include useragent
+		$args = bof_pack($1, "zizizzzi", $2, $3, $4, $printoutput, $6, "Accept: */*", "", $proxy);
+	} else if(size(@_) == 7)
+	{
+		# include headers
+		$args = bof_pack($1, "zizizzzi", $2, $3, $4, $printoutput, $6, $7, "", $proxy);
+	} else if(size(@_) == 8)
+	{
+		# include body
+		$args = bof_pack($1, "zizizzzi", $2, $3, $4, $printoutput, $6, $7, $8, $proxy);
+	} else if(size(@_) == 9)
+	{
+		# include proxy choice
+		$args = bof_pack($1, "zizizzzi", $2, $3, $4, $printoutput, $6, $7, $8, $proxy);
+	}
+
+	# announce what we're doing
+	btask($1, "Running Simple Web Request Utility (@ajpc500)");
+
+	# execute it.
+	beacon_inline_execute($1, $data, "go", $args);
+}
+# $1 - beacon id
+alias hook {
+	local('$barch $handle $data $args');
+	
+	# figure out the arch of this session
+	$barch  = barch($1);
+	
+	# read in the right BOF file
+	$handle = openf(script_resource("hook. $+ $barch $+ .o"));
+	$data   = readb($handle, -1);
+	closef($handle);
+	
+	# pack our arguments
+	$args   = bof_pack($1, "zi", "Hello beacon", 1234);
+	
+	# announce what we're doing
+	btask($1, "Running hook BOF");
+	
+	# execute it.
+	beacon_inline_execute($1, $data, "go", $args);
+}
